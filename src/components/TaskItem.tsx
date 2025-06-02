@@ -7,6 +7,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import Box from "@mui/material/Box";
 import dayjs from "dayjs";
+import Fade from "@mui/material/Fade";
 
 interface Props {
   task: Task;
@@ -25,9 +26,11 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }: Props) {
     <ListItem
       secondaryAction={
         <Box>
-          <IconButton edge="end" aria-label="edit" onClick={() => onEdit(task)}>
-            <EditIcon color="primary" />
-          </IconButton>
+          <Fade in>
+            <IconButton edge="end" aria-label="edit" onClick={() => onEdit(task)}>
+              <EditIcon color="primary" />
+            </IconButton>
+          </Fade>
           <IconButton edge="end" aria-label="delete" onClick={() => onDelete(task.id)}>
             <DeleteIcon color="error" />
           </IconButton>
@@ -108,3 +111,4 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }: Props) {
     </ListItem>
   );
 }
+

@@ -60,6 +60,20 @@ export default function TaskInput({
     }
   }, [editTask]);
 
+  function scheduleNotification(taskText: string, dueDate: string) {
+    if ("Notification" in window && Notification.permission === "granted") {
+      const due = new Date(dueDate).getTime();
+      const now = Date.now();
+      if (due > now) {
+        setTimeout(() => {
+          new Notification("Task Reminder", {
+            body: `Task "${taskText}" is due now!`,
+          });
+        }, due - now);
+      }
+    }
+  }
+
   const handleAddOrEdit = () => {
     if (text.trim()) {
       const task: Task = {
@@ -76,6 +90,9 @@ export default function TaskInput({
         onSaveEdit(task);
       } else {
         onAddTask(task);
+        if (dueDate) {
+          scheduleNotification(text, dueDate);
+        }
       }
       setText("");
       setDueDate("");
@@ -86,30 +103,42 @@ export default function TaskInput({
     }
   };
 
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+  }, []);
+
   return (
     <Box mb={2}>
-      <Grid container spacing={2} columns={12}>
-        <Grid columns={6}>
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6}>
           <TextField
-            label="Task"
+            label={editTask ? "Edit Task" : "Task"}
             value={text}
             onChange={(e) => setText(e.target.value)}
             size="small"
             fullWidth
+            placeholder="Enter task description"
           />
         </Grid>
-        <Grid columns={6}>
+        <Grid item xs={12} sm={6}>
           <TextField
-            label="Due Date"
-            type="date"
+            label={editTask ? "Edit Due Date & Time" : "Due Date & Time"}
+            type="datetime-local"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
             size="small"
             InputLabelProps={{ shrink: true }}
             fullWidth
+            sx={{
+              background: editTask ? "#fff3e0" : undefined,
+              borderRadius: 1,
+            }}
+            placeholder="Select due date and time"
           />
         </Grid>
-        <Grid columns={4}>
+        <Grid item xs={12} sm={4}>
           <Select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -124,7 +153,7 @@ export default function TaskInput({
             ))}
           </Select>
         </Grid>
-        <Grid columns={4}>
+        <Grid item xs={12} sm={4}>
           <Select
             value={recurrence}
             onChange={(e) => setRecurrence(e.target.value)}
@@ -139,7 +168,7 @@ export default function TaskInput({
             ))}
           </Select>
         </Grid>
-        <Grid columns={4}>
+        <Grid item xs={12} sm={4}>
           <Select
             labelId="priority-label"
             value={priority}
@@ -155,7 +184,7 @@ export default function TaskInput({
             ))}
           </Select>
         </Grid>
-        <Grid columns={12}>
+        <Grid item xs={12}>
           <TextField
             label="Notes"
             value={notes}
@@ -164,7 +193,7 @@ export default function TaskInput({
             fullWidth
           />
         </Grid>
-        <Grid columns={12}>
+        <Grid item xs={12}>
           <Button
             variant="contained"
             sx={{
@@ -181,7 +210,7 @@ export default function TaskInput({
           </Button>
         </Grid>
         {editTask && onCancelEdit && (
-          <Grid columns={12}>
+          <Grid item xs={12}>
             <Button
               variant="outlined"
               color="secondary"

@@ -1,7 +1,10 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import TasksPage from "./pages/TasksPage";
 import LoginPage from "./pages/LoginPage";
 import ContactsPage from "./pages/ContactsPage";
+import DashboardPage from "./pages/DashboardPage";
+import SignupPage from "./pages/SignupPage";
+import CalendarPage from "./pages/CalendarPage";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -10,10 +13,22 @@ import { Link as RouterLink } from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import Tooltip from "@mui/material/Tooltip";
 
-function App({ mode, setMode }: { mode: "light" | "dark"; setMode: (m: "light" | "dark") => void }) {
+function App({
+  mode,
+  setMode,
+  user,
+  setUser,
+}: {
+  mode: "light" | "dark";
+  setMode: (m: "light" | "dark") => void;
+  user: string | null;
+  setUser: (u: string | null) => void;
+}) {
   return (
-    <BrowserRouter>
+    <>
       <AppBar
         position="static"
         elevation={3}
@@ -31,15 +46,26 @@ function App({ mode, setMode }: { mode: "light" | "dark"; setMode: (m: "light" |
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, letterSpacing: 1 }}>
             <span role="img" aria-label="logo">💎</span> MyCRM
           </Typography>
-          <Button color="inherit" component={RouterLink} to="/">
-            Tasks
-          </Button>
-          <Button color="inherit" component={RouterLink} to="/contacts">
-            Contacts
-          </Button>
-          <Button color="inherit" component={RouterLink} to="/login">
-            Login
-          </Button>
+          {user ? (
+            <>
+              <Button color="inherit" component={RouterLink} to="/">
+                Tasks
+              </Button>
+              <Button color="inherit" component={RouterLink} to="/contacts">
+                Contacts
+              </Button>
+              <Tooltip title="Profile / Dashboard">
+                <IconButton
+                  color="inherit"
+                  component={RouterLink}
+                  to="/dashboard"
+                  sx={{ ml: 1 }}
+                >
+                  <AccountCircleIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          ) : null}
           <IconButton
             sx={{ ml: 2 }}
             onClick={() => setMode(mode === "light" ? "dark" : "light")}
@@ -50,11 +76,26 @@ function App({ mode, setMode }: { mode: "light" | "dark"; setMode: (m: "light" |
         </Toolbar>
       </AppBar>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<TasksPage />} />
-        <Route path="/contacts" element={<ContactsPage />} />
+        <Route path="/login" element={<LoginPage setUser={setUser} />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route
+          path="/"
+          element={user ? <TasksPage /> : <LoginPage setUser={setUser} />}
+        />
+        <Route
+          path="/contacts"
+          element={user ? <ContactsPage /> : <LoginPage setUser={setUser} />}
+        />
+        <Route
+          path="/dashboard"
+          element={user ? <DashboardPage user={user} /> : <LoginPage setUser={setUser} />}
+        />
+        <Route
+          path="/calendar"
+          element={user ? <CalendarPage /> : <LoginPage setUser={setUser} />}
+        />
       </Routes>
-    </BrowserRouter>
+    </>
   );
 }
 

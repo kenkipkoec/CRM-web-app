@@ -1,14 +1,25 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import TaskInput from "../components/TaskInput";
 import TaskList from "../components/TaskList";
 import { Task } from "../types/task";
-import { saveTasks, loadTasks } from "../utils/storage";
-import { Paper, Typography, Box, } from "@mui/material";
+import { Paper, Typography, Box, Button } from "@mui/material";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from "@mui/icons-material/Search";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import { apiFetch } from "../utils/api";
+
+function normalizeTask(task: unknown): Task {
+  if (typeof task === "object" && task !== null && "_id" in task) {
+    const t = task as { _id: string } & Partial<Task>;
+    return { ...t, id: t._id } as Task;
+  }
+  throw new Error("Invalid task object");
+}
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -16,24 +27,72 @@ export default function TasksPage() {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<string | "">("");
   const [sortBy, setSortBy] = useState<"dueDate" | "priority" | "">("");
+  const [snackbar, setSnackbar] = useState<{open: boolean, message: string, severity?: "success"|"info"|"error"}>({open: false, message: ""});
+  const navigate = useNavigate();
 
   useEffect(() => {
-    setTasks(loadTasks());
+    apiFetch("/tasks")
+      .then((data) => setTasks(data.map(normalizeTask)))
+      .catch(() => setSnackbar({open: true, message: "Failed to load tasks", severity: "error"}));
   }, []);
 
-  useEffect(() => {
-    saveTasks(tasks);
-  }, [tasks]);
+  // Add Task
+  const addTask = async (task: Task) => {
+    try {
+      const newTask = await apiFetch("/tasks", {
+        method: "POST",
+        body: JSON.stringify(task),
+      });
+      setTasks([...tasks, normalizeTask(newTask)]);
+      setSnackbar({open: true, message: "Task added!", severity: "success"});
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setSnackbar({open: true, message: err.message, severity: "error"});
+      } else {
+        setSnackbar({open: true, message: "Failed to add task", severity: "error"});
+      }
+    }
+  };
 
-  const addTask = (task: Task) => setTasks([...tasks, task]);
-  const toggleTask = (id: string) =>
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-  const deleteTask = (id: string) =>
-    setTasks(tasks.filter(t => t.id !== id));
-  const editTask = (task: Task) => setEditingTask(task);
-  const saveEdit = (updated: Task) => {
-    setTasks(tasks.map(t => t.id === updated.id ? updated : t));
-    setEditingTask(null);
+  // Toggle Task
+  const toggleTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    try {
+      const updated = await apiFetch(`/tasks/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ ...task, completed: !task.completed }),
+      });
+      setTasks(tasks.map(t => t.id === id ? normalizeTask(updated) : t));
+    } catch {
+      setSnackbar({open: true, message: "Failed to update task", severity: "error"});
+    }
+  };
+
+  // Delete Task
+  const deleteTask = async (id: string) => {
+    try {
+      await apiFetch(`/tasks/${id}`, { method: "DELETE" });
+      setTasks(tasks.filter(t => t.id !== id));
+      setSnackbar({open: true, message: "Task deleted successfully!", severity: "success"});
+    } catch {
+      setSnackbar({open: true, message: "Failed to delete task", severity: "error"});
+    }
+  };
+
+  // Edit Task
+  const saveEdit = async (updated: Task) => {
+    try {
+      const newTask = await apiFetch(`/tasks/${updated.id}`, {
+        method: "PUT",
+        body: JSON.stringify(updated),
+      });
+      setTasks(tasks.map(t => t.id === updated.id ? normalizeTask(newTask) : t));
+      setEditingTask(null);
+      setSnackbar({open: true, message: "Task updated successfully!", severity: "success"});
+    } catch {
+      setSnackbar({open: true, message: "Failed to update task", severity: "error"});
+    }
   };
 
   const filteredTasks = tasks
@@ -51,6 +110,10 @@ export default function TasksPage() {
       }
       return 0;
     });
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+  };
 
   return (
     <Box
@@ -77,17 +140,24 @@ export default function TasksPage() {
           background: (theme) =>
             theme.palette.mode === "light"
               ? "rgba(255,255,255,0.7)"
-              : "rgba(40,44,52,0.92)", // lighter and more opaque in dark mode
+              : "rgba(40,44,52,0.92)",
           boxShadow: (theme) =>
             theme.palette.mode === "light"
               ? "0 8px 32px 0 rgba(31, 38, 135, 0.15)"
-              : "0 8px 32px 0 rgba(0,0,0,0.45)", // stronger shadow in dark mode
+              : "0 8px 32px 0 rgba(0,0,0,0.45)",
           borderRadius: 4,
         }}
       >
         <Typography variant="h4" gutterBottom>
           CRM Tasks
         </Typography>
+        <Button
+          variant="outlined"
+          sx={{ mb: 2 }}
+          onClick={() => navigate("/calendar")}
+        >
+          Open Calendar
+        </Button>
         <Box display="flex" gap={2} mb={2}>
           <TextField
             label="Search"
@@ -101,6 +171,7 @@ export default function TasksPage() {
                 </InputAdornment>
               ),
             }}
+            fullWidth
           />
           <Select
             value={filterCategory}
@@ -136,8 +207,18 @@ export default function TasksPage() {
           tasks={filteredTasks}
           onToggle={toggleTask}
           onDelete={deleteTask}
-          onEdit={editTask}
+          onEdit={handleEditTask}
         />
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3000}
+          onClose={() => setSnackbar({...snackbar, open: false})}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert severity={snackbar.severity || "info"} sx={{ width: "100%" }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Paper>
     </Box>
   );

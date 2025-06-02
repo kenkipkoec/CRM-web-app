@@ -1,6 +1,7 @@
 import { Task } from "../types/task";
 import TaskItem from "./TaskItem";
 import List from "@mui/material/List";
+import Collapse from "@mui/material/Collapse";
 
 interface Props {
   tasks: Task[];
@@ -13,13 +14,14 @@ export default function TaskList({ tasks, onToggle, onDelete, onEdit }: Props) {
   return (
     <List>
       {tasks.map(task => (
-        <TaskItem
-          key={task.id}
-          task={task}
-          onToggle={onToggle}
-          onDelete={onDelete}
-          onEdit={onEdit}
-        />
+        <Collapse key={task.id} in>
+          <TaskItem
+            task={task}
+            onToggle={onToggle}
+            onDelete={onDelete}
+            onEdit={onEdit}
+          />
+        </Collapse>
       ))}
     </List>
   );

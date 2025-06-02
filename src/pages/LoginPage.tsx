@@ -1,7 +1,66 @@
-export default function LoginPage() {
+import { useState } from "react";
+import { Paper, Typography, Box, TextField, Button, Link, Alert } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/api";
+
+export default function LoginPage({ setUser }: { setUser: (u: string) => void }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = async () => {
+    try {
+      const res = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: username, password }),
+      });
+      localStorage.setItem("token", res.token);
+      setUser(username);
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+      else setError("Login failed");
+    }
+  };
+
   return (
-    <div>
-      <h2>Login (Coming Soon)</h2>
-    </div>
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      <Paper sx={{ p: 4, minWidth: 300 }}>
+        <Typography variant="h5" gutterBottom>
+          Login
+        </Typography>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Welcome to our Interpark Customer Relation Management site where we handle your tasks and errands.<br />
+          Login if you have an account. If not, register with us by clicking on <b>register with us</b>.
+        </Alert>
+        {error && <Typography color="error" variant="body2">{error}</Typography>}
+        <TextField
+          label="Email"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+          fullWidth
+          margin="normal"
+          placeholder="Enter your email"
+        />
+        <TextField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          fullWidth
+          margin="normal"
+          placeholder="Enter your password"
+        />
+        <Button variant="contained" fullWidth sx={{ mt: 2 }} onClick={handleLogin}>
+          Login
+        </Button>
+        <Typography align="center" sx={{ mt: 2 }}>
+          New user?{" "}
+          <Link component="button" onClick={() => navigate("/signup")}>
+            Register with us
+          </Link>
+        </Typography>
+      </Paper>
+    </Box>
   );
 }
