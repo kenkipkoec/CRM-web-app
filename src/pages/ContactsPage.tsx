@@ -234,7 +234,7 @@ export default function ContactsPage() {
                     </Typography>
                   }
                   secondary={
-                    <Box sx={{ fontSize: { xs: "0.9rem", sm: "1rem" } }}>
+                    <Box component="span" sx={{ fontSize: { xs: "0.9rem", sm: "1rem" } }}>
                       {contact.email && <span>Email: {contact.email} </span>}
                       {contact.phone && <span>Phone: {contact.phone} </span>}
                       {contact.company && <span>Company: {contact.company} </span>}
