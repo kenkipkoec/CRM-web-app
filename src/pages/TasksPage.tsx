@@ -13,14 +13,6 @@ import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import { apiFetch } from "../utils/api";
 
-function normalizeTask(task: unknown): Task {
-  if (typeof task === "object" && task !== null && "_id" in task) {
-    const t = task as { _id: string } & Partial<Task>;
-    return { ...t, id: t._id } as Task;
-  }
-  throw new Error("Invalid task object");
-}
-
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -32,7 +24,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     apiFetch("/tasks")
-      .then((data) => setTasks(data.map(normalizeTask)))
+      .then((data) => setTasks(data))
       .catch(() => setSnackbar({open: true, message: "Failed to load tasks", severity: "error"}));
   }, []);
 
@@ -43,7 +35,7 @@ export default function TasksPage() {
         method: "POST",
         body: JSON.stringify(task),
       });
-      setTasks([...tasks, normalizeTask(newTask)]);
+      setTasks([...tasks, newTask]);
       setSnackbar({open: true, message: "Task added!", severity: "success"});
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -63,7 +55,7 @@ export default function TasksPage() {
         method: "PUT",
         body: JSON.stringify({ ...task, completed: !task.completed }),
       });
-      setTasks(tasks.map(t => t.id === id ? normalizeTask(updated) : t));
+      setTasks(tasks.map(t => t.id === id ? updated : t));
     } catch {
       setSnackbar({open: true, message: "Failed to update task", severity: "error"});
     }
@@ -87,7 +79,7 @@ export default function TasksPage() {
         method: "PUT",
         body: JSON.stringify(updated),
       });
-      setTasks(tasks.map(t => t.id === updated.id ? normalizeTask(newTask) : t));
+      setTasks(tasks.map(t => t.id === updated.id ? newTask : t));
       setEditingTask(null);
       setSnackbar({open: true, message: "Task updated successfully!", severity: "success"});
     } catch {
@@ -97,7 +89,7 @@ export default function TasksPage() {
 
   const filteredTasks = tasks
     .filter(t =>
-      t.text.toLowerCase().includes(search.toLowerCase()) &&
+      (t.description || "").toLowerCase().includes(search.toLowerCase()) &&
       (filterCategory ? t.category === filterCategory : true)
     )
     .sort((a, b) => {
@@ -105,7 +97,7 @@ export default function TasksPage() {
         return (a.dueDate || "").localeCompare(b.dueDate || "");
       }
       if (sortBy === "priority") {
-        const order = { low: 1, medium: 2, high: 3 };
+        const order: Record<string, number> = { low: 1, medium: 2, high: 3 };
         return (order[b.priority || "low"] - order[a.priority || "low"]);
       }
       return 0;
@@ -187,7 +179,7 @@ export default function TasksPage() {
           </Select>
           <Select
             value={sortBy}
-            onChange={e => setSortBy(e.target.value)}
+            onChange={e => setSortBy(e.target.value as any)}
             size="small"
             displayEmpty
             sx={{ minWidth: 120 }}

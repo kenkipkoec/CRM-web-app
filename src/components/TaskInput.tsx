@@ -44,7 +44,7 @@ export default function TaskInput({
 
   useEffect(() => {
     if (editTask) {
-      setText(editTask.text);
+      setText(editTask.description);
       setDueDate(editTask.dueDate || "");
       setCategory(editTask.category || CATEGORIES[0]);
       setRecurrence(editTask.recurrence || "none");
@@ -60,47 +60,29 @@ export default function TaskInput({
     }
   }, [editTask]);
 
-  function scheduleNotification(taskText: string, dueDate: string) {
-    if ("Notification" in window && Notification.permission === "granted") {
-      const due = new Date(dueDate).getTime();
-      const now = Date.now();
-      if (due > now) {
-        setTimeout(() => {
-          new Notification("Task Reminder", {
-            body: `Task "${taskText}" is due now!`,
-          });
-        }, due - now);
-      }
-    }
-  }
-
   const handleAddOrEdit = () => {
-    if (text.trim()) {
-      const task: Task = {
-        id: editTask ? editTask.id : Date.now().toString(),
-        text,
-        completed: editTask ? editTask.completed : false,
-        dueDate: dueDate || undefined,
-        category,
-        recurrence: recurrence as Task["recurrence"],
-        notes: notes || undefined,
-        priority: priority as Task["priority"],
-      };
-      if (editTask && onSaveEdit) {
-        onSaveEdit(task);
-      } else {
-        onAddTask(task);
-        if (dueDate) {
-          scheduleNotification(text, dueDate);
-        }
-      }
-      setText("");
-      setDueDate("");
-      setCategory(CATEGORIES[0]);
-      setRecurrence("none");
-      setNotes("");
-      setPriority("medium");
+    const task: Task = {
+      id: editTask ? editTask.id : Math.random().toString(),
+      description: text,
+      dueDate,
+      category,
+      recurrence,
+      notes,
+      priority,
+      completed: editTask ? editTask.completed : false,
+      created_at: editTask ? editTask.created_at : new Date().toISOString(), // <-- fixed here
+    };
+    if (editTask && onSaveEdit) {
+      onSaveEdit(task);
+    } else {
+      onAddTask(task);
     }
+    setText("");
+    setDueDate("");
+    setCategory(CATEGORIES[0]);
+    setRecurrence("none");
+    setNotes("");
+    setPriority("medium");
   };
 
   useEffect(() => {
@@ -112,7 +94,7 @@ export default function TaskInput({
   return (
     <Box mb={2}>
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
+        <Grid>
           <TextField
             label={editTask ? "Edit Task" : "Task"}
             value={text}
@@ -122,7 +104,7 @@ export default function TaskInput({
             placeholder="Enter task description"
           />
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid>
           <TextField
             label={editTask ? "Edit Due Date & Time" : "Due Date & Time"}
             type="datetime-local"
@@ -131,14 +113,10 @@ export default function TaskInput({
             size="small"
             InputLabelProps={{ shrink: true }}
             fullWidth
-            sx={{
-              background: editTask ? "#fff3e0" : undefined,
-              borderRadius: 1,
-            }}
             placeholder="Select due date and time"
           />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid>
           <Select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -153,7 +131,7 @@ export default function TaskInput({
             ))}
           </Select>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid>
           <Select
             value={recurrence}
             onChange={(e) => setRecurrence(e.target.value)}
@@ -168,9 +146,8 @@ export default function TaskInput({
             ))}
           </Select>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid>
           <Select
-            labelId="priority-label"
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
             size="small"
@@ -184,7 +161,7 @@ export default function TaskInput({
             ))}
           </Select>
         </Grid>
-        <Grid item xs={12}>
+        <Grid>
           <TextField
             label="Notes"
             value={notes}
@@ -193,7 +170,7 @@ export default function TaskInput({
             fullWidth
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid>
           <Button
             variant="contained"
             sx={{
@@ -210,7 +187,7 @@ export default function TaskInput({
           </Button>
         </Grid>
         {editTask && onCancelEdit && (
-          <Grid item xs={12}>
+          <Grid>
             <Button
               variant="outlined"
               color="secondary"

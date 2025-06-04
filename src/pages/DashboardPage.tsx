@@ -3,23 +3,28 @@ import { Paper, Typography, Box, Grid, Avatar } from "@mui/material";
 import { Task } from "../types/task";
 import { apiFetch } from "../utils/api";
 
-type UserProfile = {
+interface UserProfile {
+  id: number;
   username: string;
   firstName: string;
   lastName: string;
   email: string;
   contact: string;
-  password?: string;
-};
+}
 
 interface DashboardPageProps {
   user: string;
 }
 
-function normalizeTask(task: unknown): Task {
-  if (typeof task === "object" && task !== null && "_id" in task) {
-    const t = task as { _id: string } & Partial<Task>;
-    return { ...t, id: t._id } as Task;
+// Accept both MongoDB (_id) and SQL (id) style, but default to id
+function normalizeTask(task: any): Task {
+  if (task && typeof task === "object") {
+    if ("_id" in task) {
+      return { ...task, id: (task as any)._id } as Task;
+    }
+    if ("id" in task) {
+      return task as Task;
+    }
   }
   throw new Error("Invalid task object");
 }
@@ -89,6 +94,7 @@ export default function DashboardPage({ user }: DashboardPageProps) {
           <Box display="flex" alignItems="center" mb={4} gap={2}>
             <Avatar sx={{ width: 56, height: 56 }}>
               {profile.firstName?.[0]?.toUpperCase() ||
+                profile.lastName?.[0]?.toUpperCase() ||
                 profile.username?.[0]?.toUpperCase() ||
                 "U"}
             </Avatar>
@@ -109,19 +115,19 @@ export default function DashboardPage({ user }: DashboardPageProps) {
           </Box>
         )}
         <Grid container spacing={4}>
-          <Grid item xs={12} sm={4}>
+          <Grid>
             <Typography variant="h6">Total Tasks</Typography>
             <Typography variant="h3" color="primary">
               {taskCount}
             </Typography>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid>
             <Typography variant="h6">Completed Tasks</Typography>
             <Typography variant="h3" color="success.main">
               {completedCount}
             </Typography>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid>
             <Typography variant="h6">Contacts</Typography>
             <Typography variant="h3" color="secondary">
               {contactCount}

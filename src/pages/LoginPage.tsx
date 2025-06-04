@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
 export default function LoginPage({ setUser }: { setUser: (u: string) => void }) {
-  const [username, setUsername] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -13,10 +13,11 @@ export default function LoginPage({ setUser }: { setUser: (u: string) => void })
     try {
       const res = await apiFetch("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email: username, password }),
+        body: JSON.stringify({ login, password }),
       });
       localStorage.setItem("token", res.token);
-      setUser(username);
+      setUser(res.user.username);
+      navigate("/");
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
       else setError("Login failed");
@@ -35,12 +36,12 @@ export default function LoginPage({ setUser }: { setUser: (u: string) => void })
         </Alert>
         {error && <Typography color="error" variant="body2">{error}</Typography>}
         <TextField
-          label="Email"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
+          label="Username or Email"
+          value={login}
+          onChange={e => setLogin(e.target.value)}
           fullWidth
           margin="normal"
-          placeholder="Enter your email"
+          placeholder="Enter your username or email"
         />
         <TextField
           label="Password"
@@ -56,7 +57,7 @@ export default function LoginPage({ setUser }: { setUser: (u: string) => void })
         </Button>
         <Typography align="center" sx={{ mt: 2 }}>
           New user?{" "}
-          <Link component="button" onClick={() => navigate("/signup")}>
+          <Link href="/signup" underline="hover">
             Register with us
           </Link>
         </Typography>

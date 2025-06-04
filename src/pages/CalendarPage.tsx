@@ -230,7 +230,7 @@ export default function CalendarPage() {
                   }}
                 >
                   <ListItemText
-                    primary={task.text}
+                    primary={task.description}
                     secondary={
                       task.dueDate
                         ? `Due: ${dayjs(task.dueDate).format("HH:mm")}`

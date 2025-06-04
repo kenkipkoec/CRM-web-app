@@ -15,13 +15,8 @@ import {
 } from "@mui/material";
 import { apiFetch } from "../utils/api";
 
-// Robust normalization for backend contact objects
-function normalizeContact(contact: unknown): Contact {
-  if (typeof contact === "object" && contact !== null && "_id" in contact) {
-    const c = contact as { _id: string } & Partial<Contact>;
-    return { ...c, id: c._id } as Contact;
-  }
-  throw new Error("Invalid contact object");
+function normalizeContact(contact: any): Contact {
+  return contact as Contact;
 }
 
 export default function ContactsPage() {
@@ -141,7 +136,7 @@ export default function ContactsPage() {
           Contacts
         </Typography>
         <Grid container spacing={2} mb={2}>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid>
             <TextField
               label="Name"
               value={name}
@@ -149,7 +144,7 @@ export default function ContactsPage() {
               fullWidth
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid>
             <TextField
               label="Email"
               value={email}
@@ -157,7 +152,7 @@ export default function ContactsPage() {
               fullWidth
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid>
             <TextField
               label="Phone"
               value={phone}
@@ -165,7 +160,7 @@ export default function ContactsPage() {
               fullWidth
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid>
             <TextField
               label="Company"
               value={company}
@@ -173,7 +168,7 @@ export default function ContactsPage() {
               fullWidth
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid>
             <TextField
               label="Notes"
               value={notes}
@@ -181,7 +176,7 @@ export default function ContactsPage() {
               fullWidth
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid>
             <Button variant="contained" onClick={addContact} fullWidth>
               Add Contact
             </Button>

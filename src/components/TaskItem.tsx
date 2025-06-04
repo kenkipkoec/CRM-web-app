@@ -44,8 +44,10 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }: Props) {
             theme.palette.mode === "light"
               ? "rgba(0,84,120,0.06)"
               : "rgba(255,255,255,0.04)",
-          boxShadow: "0 2px 8px 0 rgba(31,38,135,0.08)",
         },
+        mb: 1,
+        borderRadius: 2,
+        boxShadow: "0 2px 8px 0 rgba(31,38,135,0.08)",
       }}
     >
       <Checkbox
@@ -62,7 +64,7 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }: Props) {
             color: isOverdue ? "error.main" : undefined,
           }}
         >
-          {task.text}
+          {task.description}
           {isOverdue && (
             <Typography
               component="span"
@@ -96,13 +98,16 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }: Props) {
             </Typography>
           )}
           {task.priority && (
-            <Typography variant="caption" color={
-              task.priority === "high"
-                ? "error"
-                : task.priority === "medium"
-                ? "warning.main"
-                : "success.main"
-            }>
+            <Typography
+              variant="caption"
+              color={
+                task.priority === "high"
+                  ? "error"
+                  : task.priority === "medium"
+                  ? "warning.main"
+                  : "success.main"
+              }
+            >
               ⭐ {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
             </Typography>
           )}

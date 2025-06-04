@@ -33,8 +33,12 @@ export default function SignupPage() {
       setError("Username is required.");
       return;
     }
-    if (!firstName.trim() || !lastName.trim()) {
-      setError("First and last name are required.");
+    if (!firstName.trim()) {
+      setError("First Name is required.");
+      return;
+    }
+    if (!lastName.trim()) {
+      setError("Last Name is required.");
       return;
     }
     if (!validateEmail(email)) {
@@ -57,7 +61,6 @@ export default function SignupPage() {
       setError("Please verify you are not a bot.");
       return;
     }
-    // Save user to localStorage (for demo; use backend for real apps)
     try {
       const res = await apiFetch("/auth/signup", {
         method: "POST",
@@ -144,11 +147,15 @@ export default function SignupPage() {
               onChange={e => setBotChecked(e.target.checked)}
             />
           }
-          label="I am not a bot"
+          label="I'm not a bot"
         />
         <Button variant="contained" fullWidth sx={{ mt: 2 }} onClick={handleSignup}>
           Sign Up
         </Button>
+        <Typography align="center" sx={{ mt: 2 }}>
+          Already have an account?{" "}
+          <a href="/login">Login</a>
+        </Typography>
       </Paper>
     </Box>
   );

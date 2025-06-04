@@ -15,6 +15,11 @@ import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Tooltip from "@mui/material/Tooltip";
+import AccountsPage from "./pages/AccountPage";
+import JournalPage from "./pages/JournalPage";
+import TrialBalancePage from "./pages/TrialBalancePage";
+import IncomeStatementPage from "./pages/IncomeStatementPage";
+import BalanceSheetPage from "./pages/BalanceSheetPage";
 
 function App({
   mode,
@@ -94,6 +99,11 @@ function App({
           path="/calendar"
           element={user ? <CalendarPage /> : <LoginPage setUser={setUser} />}
         />
+        <Route path="/accounts" element={<AccountsPage />} />
+        <Route path="/journal" element={<JournalPage />} />
+        <Route path="/trial-balance" element={<TrialBalancePage />} />
+        <Route path="/income-statement" element={<IncomeStatementPage />} />
+        <Route path="/balance-sheet" element={<BalanceSheetPage />} />
       </Routes>
     </>
   );
