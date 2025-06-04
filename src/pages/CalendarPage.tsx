@@ -68,26 +68,29 @@ export default function CalendarPage() {
 
   return (
     <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="flex-start"
-      minHeight="100vh"
       sx={{
+        width: "100vw",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
         background: (theme) =>
           theme.palette.mode === "light"
             ? "linear-gradient(135deg, #e3f0ff 60%, #f5f6fa 100%)"
             : "linear-gradient(135deg, #181c24 60%, #22334d 100%)",
+        px: { xs: 0, sm: 2 },
+        py: { xs: 1, sm: 2 },
       }}
     >
       <Paper
         elevation={6}
         sx={{
-          p: 4,
-          mt: 8,
+          p: { xs: 2, sm: 4 },
+          mt: { xs: 2, sm: 8 },
           width: "100%",
-          maxWidth: 500,
+          maxWidth: { xs: "100%", sm: 500 },
           mx: "auto",
-          borderRadius: 6,
+          borderRadius: { xs: 2, sm: 6 },
           background: (theme) =>
             theme.palette.mode === "light"
               ? "rgba(255,255,255,0.95)"
@@ -96,6 +99,7 @@ export default function CalendarPage() {
             theme.palette.mode === "light"
               ? "0 8px 32px 0 rgba(31, 38, 135, 0.20)"
               : "0 8px 32px 0 rgba(0,0,0,0.55)",
+          overflowX: "auto",
         }}
       >
         <Box display="flex" alignItems="center" gap={2} mb={2}>
@@ -109,6 +113,8 @@ export default function CalendarPage() {
         <Divider sx={{ mb: 3 }} />
         <Box
           sx={{
+            width: "100%",
+            overflowX: "auto",
             display: "flex",
             justifyContent: "center",
             mb: 3,
@@ -124,12 +130,15 @@ export default function CalendarPage() {
                   ? "#f9fafc"
                   : "#23283a",
               p: 2,
+              width: "100%",
+              minWidth: 0,
+              maxWidth: 400,
             },
             "& .react-calendar__navigation": {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              marginBottom: "8px", // Add space below header
+              marginBottom: "8px",
               gap: 8,
             },
             "& .react-calendar__navigation__label": {
@@ -213,33 +222,35 @@ export default function CalendarPage() {
             <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
               Tasks for {dayjs(selectedDate).format("MMM D, YYYY")}
             </Typography>
-            <List>
-              {tasksForDate.length === 0 && (
-                <ListItem>
-                  <ListItemText primary="No tasks for this date." />
-                </ListItem>
-              )}
-              {tasksForDate.map((task) => (
-                <ListItem
-                  key={task.id}
-                  sx={{
-                    borderRadius: 2,
-                    mb: 1,
-                    bgcolor: "background.paper",
-                    boxShadow: 1,
-                  }}
-                >
-                  <ListItemText
-                    primary={task.description}
-                    secondary={
-                      task.dueDate
-                        ? `Due: ${dayjs(task.dueDate).format("HH:mm")}`
-                        : ""
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
+            <Box sx={{ width: "100%", overflowX: "auto" }}>
+              <List>
+                {tasksForDate.length === 0 && (
+                  <ListItem>
+                    <ListItemText primary="No tasks for this date." />
+                  </ListItem>
+                )}
+                {tasksForDate.map((task) => (
+                  <ListItem
+                    key={task.id}
+                    sx={{
+                      borderRadius: 2,
+                      mb: 1,
+                      bgcolor: "background.paper",
+                      boxShadow: 1,
+                    }}
+                  >
+                    <ListItemText
+                      primary={task.description}
+                      secondary={
+                        task.dueDate
+                          ? `Due: ${dayjs(task.dueDate).format("HH:mm")}`
+                          : ""
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
           </>
         )}
       </Paper>

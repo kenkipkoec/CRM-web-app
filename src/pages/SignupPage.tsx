@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Paper, Typography, Box, TextField, Button, Checkbox, FormControlLabel, Alert } from "@mui/material";
+import { Paper, Typography, Box, TextField, Button, Checkbox, FormControlLabel, Alert, IconButton, InputAdornment } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
@@ -24,6 +25,8 @@ export default function SignupPage() {
   const [botChecked, setBotChecked] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
 
   const handleSignup = async () => {
@@ -125,20 +128,46 @@ export default function SignupPage() {
         />
         <TextField
           label="Password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={password}
           onChange={e => setPassword(e.target.value)}
           fullWidth
           margin="normal"
           placeholder="Create a password"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowPassword(v => !v)}
+                  edge="end"
+                  aria-label="toggle password visibility"
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
         />
         <TextField
           label="Confirm Password"
-          type="password"
+          type={showConfirm ? "text" : "password"}
           value={confirm}
           onChange={e => setConfirm(e.target.value)}
           fullWidth
           margin="normal"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowConfirm(v => !v)}
+                  edge="end"
+                  aria-label="toggle confirm password visibility"
+                >
+                  {showConfirm ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
         />
         <FormControlLabel
           control={

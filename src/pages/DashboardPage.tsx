@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Paper, Typography, Box, Grid, Avatar } from "@mui/material";
+import { Paper, Typography, Box, Grid, Avatar, Button } from "@mui/material";
 import { Task } from "../types/task";
 import { apiFetch } from "../utils/api";
+import { useNavigate } from "react-router-dom";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 interface UserProfile {
   id: number;
@@ -12,11 +14,10 @@ interface UserProfile {
   contact: string;
 }
 
-interface DashboardPageProps {
-  user: string;
+export interface DashboardPageProps {
+  user: string | null;
 }
 
-// Accept both MongoDB (_id) and SQL (id) style, but default to id
 function normalizeTask(task: any): Task {
   if (task && typeof task === "object") {
     if ("_id" in task) {
@@ -29,11 +30,12 @@ function normalizeTask(task: any): Task {
   throw new Error("Invalid task object");
 }
 
-export default function DashboardPage({ user }: DashboardPageProps) {
+export default function DashboardPage({ user, setUser }: DashboardPageProps & { setUser: (u: string | null) => void }) {
   const [taskCount, setTaskCount] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [contactCount, setContactCount] = useState(0);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchProfileAndCounts() {
@@ -53,6 +55,12 @@ export default function DashboardPage({ user }: DashboardPageProps) {
     }
     fetchProfileAndCounts();
   }, [user]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+    navigate("/login");
+  };
 
   return (
     <Box
@@ -87,6 +95,17 @@ export default function DashboardPage({ user }: DashboardPageProps) {
           borderRadius: 4,
         }}
       >
+        <Box display="flex" justifyContent="flex-end">
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{ mb: 2 }}
+          >
+            Logout
+          </Button>
+        </Box>
         <Typography variant="h4" gutterBottom>
           Dashboard
         </Typography>

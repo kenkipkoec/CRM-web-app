@@ -4,6 +4,7 @@ import App from "./App";
 import "./index.css";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 import { useNavigate, useLocation, BrowserRouter } from "react-router-dom";
+import { apiFetch } from "./utils/api";
 
 function MainWithRedirect() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -38,6 +39,19 @@ function MainWithRedirect() {
       navigate("/");
     }
   }, [user, navigate, location.pathname]);
+
+  useEffect(() => {
+    // On mount, check for token and fetch user profile
+    const token = localStorage.getItem("token");
+    if (token && !user) {
+      apiFetch("/auth/me")
+        .then(profile => setUser(profile.username)) // or setUser(profile) if you want the whole object
+        .catch(() => {
+          localStorage.removeItem("token");
+          setUser(null);
+        });
+    }
+  }, [user]);
 
   return (
     <ThemeProvider theme={theme}>

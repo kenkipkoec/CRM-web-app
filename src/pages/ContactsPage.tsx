@@ -9,7 +9,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Grid,
   Snackbar,
   Alert,
 } from "@mui/material";
@@ -110,15 +109,18 @@ export default function ContactsPage() {
           theme.palette.mode === "light"
             ? "linear-gradient(135deg, #f5f6fa 60%, #e3f0ff 100%)"
             : "linear-gradient(135deg, #181c24 60%, #22334d 100%)",
+        px: { xs: 0, sm: 2 },
+        py: { xs: 1, sm: 2 },
+        width: "100%",
       }}
     >
       <Paper
         elevation={3}
         sx={{
-          p: 4,
-          mt: 8,
+          p: { xs: 1, sm: 2, md: 4 },
+          mt: { xs: 1, sm: 2, md: 8 },
           width: "100%",
-          maxWidth: 900,
+          maxWidth: { xs: "100%", sm: 600, md: 900 },
           mx: "auto",
           backdropFilter: "blur(16px)",
           background: (theme) =>
@@ -132,83 +134,118 @@ export default function ContactsPage() {
           borderRadius: 4,
         }}
       >
-        <Typography variant="h4" gutterBottom>
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{ fontSize: { xs: "1.4rem", sm: "2rem" }, textAlign: "center" }}
+        >
           Contacts
         </Typography>
-        <Grid container spacing={2} mb={2}>
-          <Grid>
-            <TextField
-              label="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              fullWidth
-            />
-          </Grid>
-          <Grid>
-            <TextField
-              label="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              fullWidth
-            />
-          </Grid>
-          <Grid>
-            <TextField
-              label="Phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              fullWidth
-            />
-          </Grid>
-          <Grid>
-            <TextField
-              label="Company"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              fullWidth
-            />
-          </Grid>
-          <Grid>
-            <TextField
-              label="Notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              fullWidth
-            />
-          </Grid>
-          <Grid>
-            <Button variant="contained" onClick={addContact} fullWidth>
-              Add Contact
-            </Button>
-          </Grid>
-        </Grid>
-        <List>
-          {contacts.map((contact) => (
-            <ListItem
-              key={contact.id}
-              secondaryAction={
-                <Button
-                  color="error"
-                  onClick={() => deleteContact(contact.id)}
-                >
-                  Delete
-                </Button>
-              }
-            >
-              <ListItemText
-                primary={contact.name}
-                secondary={
-                  <>
-                    {contact.email && <span>Email: {contact.email} </span>}
-                    {contact.phone && <span>Phone: {contact.phone} </span>}
-                    {contact.company && <span>Company: {contact.company} </span>}
-                    {contact.notes && <span>Notes: {contact.notes}</span>}
-                  </>
+        {/* Responsive form using CSS grid */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "1fr 1fr",
+              md: "1fr 1fr 1fr",
+            },
+            gap: 2,
+            mb: 2,
+          }}
+        >
+          <TextField
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            fullWidth
+            size="small"
+          />
+          <TextField
+            label="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            fullWidth
+            size="small"
+          />
+          <TextField
+            label="Phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            fullWidth
+            size="small"
+          />
+          <TextField
+            label="Company"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            fullWidth
+            size="small"
+            sx={{ gridColumn: { xs: "1", sm: "1 / span 2", md: "auto" } }}
+          />
+          <TextField
+            label="Notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            fullWidth
+            size="small"
+            sx={{ gridColumn: { xs: "1", sm: "2 / span 1", md: "auto" } }}
+          />
+          <Button
+            variant="contained"
+            onClick={addContact}
+            fullWidth
+            sx={{
+              height: { xs: 40, sm: "100%" },
+              mt: { xs: 1, sm: 0 },
+              gridColumn: { xs: "1", sm: "1 / span 2", md: "auto" },
+            }}
+          >
+            Add Contact
+          </Button>
+        </Box>
+        <Box sx={{ width: "100%", overflowX: "auto" }}>
+          <List sx={{ minWidth: 250 }}>
+            {contacts.map((contact) => (
+              <ListItem
+                key={contact.id}
+                secondaryAction={
+                  <Button
+                    color="error"
+                    onClick={() => deleteContact(contact.id)}
+                  >
+                    Delete
+                  </Button>
                 }
-              />
-            </ListItem>
-          ))}
-        </List>
+                sx={{
+                  borderRadius: 2,
+                  mb: 1,
+                  bgcolor: "background.paper",
+                  boxShadow: 1,
+                  minWidth: 220,
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: { xs: "flex-start", sm: "center" },
+                }}
+              >
+                <ListItemText
+                  primary={
+                    <Typography sx={{ fontSize: { xs: "1rem", sm: "1.1rem" } }}>
+                      {contact.name}
+                    </Typography>
+                  }
+                  secondary={
+                    <Box sx={{ fontSize: { xs: "0.9rem", sm: "1rem" } }}>
+                      {contact.email && <span>Email: {contact.email} </span>}
+                      {contact.phone && <span>Phone: {contact.phone} </span>}
+                      {contact.company && <span>Company: {contact.company} </span>}
+                      {contact.notes && <span>Notes: {contact.notes}</span>}
+                    </Box>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Box>
         <Snackbar
           open={snackbar.open}
           autoHideDuration={3000}

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Paper, Typography, Box, TextField, Button, Link, Alert } from "@mui/material";
+import { Paper, Typography, Box, TextField, Button, Link, Alert, IconButton, InputAdornment } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
@@ -7,6 +8,7 @@ export default function LoginPage({ setUser }: { setUser: (u: string) => void })
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -45,12 +47,25 @@ export default function LoginPage({ setUser }: { setUser: (u: string) => void })
         />
         <TextField
           label="Password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={password}
           onChange={e => setPassword(e.target.value)}
           fullWidth
           margin="normal"
           placeholder="Enter your password"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowPassword(v => !v)}
+                  edge="end"
+                  aria-label="toggle password visibility"
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
         />
         <Button variant="contained" fullWidth sx={{ mt: 2 }} onClick={handleLogin}>
           Login

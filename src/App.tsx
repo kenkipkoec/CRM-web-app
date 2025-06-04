@@ -20,6 +20,15 @@ import JournalPage from "./pages/JournalPage";
 import TrialBalancePage from "./pages/TrialBalancePage";
 import IncomeStatementPage from "./pages/IncomeStatementPage";
 import BalanceSheetPage from "./pages/BalanceSheetPage";
+import { useState } from "react";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import Drawer from "@mui/material/Drawer";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import MenuIcon from "@mui/icons-material/Menu";
 
 function App({
   mode,
@@ -32,6 +41,20 @@ function App({
   user: string | null;
   setUser: (u: string | null) => void;
 }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const navLinks = [
+    { label: "Tasks", to: "/" },
+    { label: "Contacts", to: "/contacts" },
+    { label: "Accounts", to: "/accounts" },
+    { label: "Journal", to: "/journal" },
+    { label: "Trial Balance", to: "/trial-balance" },
+    { label: "Income Statement", to: "/income-statement" },
+    { label: "Balance Sheet", to: "/balance-sheet" },
+  ];
+
   return (
     <>
       <AppBar
@@ -52,24 +75,73 @@ function App({
             <span role="img" aria-label="logo">💎</span> MyCRM
           </Typography>
           {user ? (
-            <>
-              <Button color="inherit" component={RouterLink} to="/">
-                Tasks
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/contacts">
-                Contacts
-              </Button>
-              <Tooltip title="Profile / Dashboard">
+            isMobile ? (
+              <>
                 <IconButton
                   color="inherit"
-                  component={RouterLink}
-                  to="/dashboard"
+                  edge="end"
+                  onClick={() => setDrawerOpen(true)}
                   sx={{ ml: 1 }}
                 >
-                  <AccountCircleIcon />
+                  <MenuIcon />
                 </IconButton>
-              </Tooltip>
-            </>
+                <Drawer
+                  anchor="right"
+                  open={drawerOpen}
+                  onClose={() => setDrawerOpen(false)}
+                  PaperProps={{
+                    sx: { width: 220 }
+                  }}
+                >
+                  <List>
+                    {navLinks.map((link) => (
+                      <ListItem key={link.to} disablePadding>
+                        <ListItemButton
+                          component={RouterLink}
+                          to={link.to}
+                          onClick={() => setDrawerOpen(false)}
+                        >
+                          <ListItemText primary={link.label} />
+                        </ListItemButton>
+                      </ListItem>
+                    ))}
+                    <ListItem disablePadding>
+                      <ListItemButton
+                        component={RouterLink}
+                        to="/dashboard"
+                        onClick={() => setDrawerOpen(false)}
+                      >
+                        <AccountCircleIcon sx={{ mr: 1 }} />
+                        <ListItemText primary="Dashboard" />
+                      </ListItemButton>
+                    </ListItem>
+                  </List>
+                </Drawer>
+              </>
+            ) : (
+              <>
+                {navLinks.map((link) => (
+                  <Button
+                    key={link.to}
+                    color="inherit"
+                    component={RouterLink}
+                    to={link.to}
+                  >
+                    {link.label}
+                  </Button>
+                ))}
+                <Tooltip title="Profile / Dashboard">
+                  <IconButton
+                    color="inherit"
+                    component={RouterLink}
+                    to="/dashboard"
+                    sx={{ ml: 1 }}
+                  >
+                    <AccountCircleIcon />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )
           ) : null}
           <IconButton
             sx={{ ml: 2 }}
@@ -93,17 +165,32 @@ function App({
         />
         <Route
           path="/dashboard"
-          element={user ? <DashboardPage user={user} /> : <LoginPage setUser={setUser} />}
+          element={<DashboardPage user={user} setUser={setUser} />}
         />
         <Route
           path="/calendar"
           element={user ? <CalendarPage /> : <LoginPage setUser={setUser} />}
         />
-        <Route path="/accounts" element={<AccountsPage />} />
-        <Route path="/journal" element={<JournalPage />} />
-        <Route path="/trial-balance" element={<TrialBalancePage />} />
-        <Route path="/income-statement" element={<IncomeStatementPage />} />
-        <Route path="/balance-sheet" element={<BalanceSheetPage />} />
+        <Route
+          path="/accounts"
+          element={user ? <AccountsPage /> : <LoginPage setUser={setUser} />}
+        />
+        <Route
+          path="/journal"
+          element={user ? <JournalPage /> : <LoginPage setUser={setUser} />}
+        />
+        <Route
+          path="/trial-balance"
+          element={user ? <TrialBalancePage /> : <LoginPage setUser={setUser} />}
+        />
+        <Route
+          path="/income-statement"
+          element={user ? <IncomeStatementPage /> : <LoginPage setUser={setUser} />}
+        />
+        <Route
+          path="/balance-sheet"
+          element={user ? <BalanceSheetPage /> : <LoginPage setUser={setUser} />}
+        />
       </Routes>
     </>
   );
