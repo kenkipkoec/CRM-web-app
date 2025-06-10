@@ -1,14 +1,31 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api";
 import { Paper, Typography, Table, TableHead, TableRow, TableCell, TableBody, Box } from "@mui/material";
+import ExportButton from "../components/ExportButton";
 
-export default function TrialBalancePage() {
+export default function TrialBalancePage({ bookId }: { bookId: number | null }) {
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    apiFetch("/journal/trial-balance").then(setData);
-  }, []);
+    if (bookId) apiFetch(`/journal/trial-balance?book_id=${bookId}`).then(setData);
+  }, [bookId]);
 
+  const exportCSV = () => {
+    if (!data) return;
+    const header = "Account Code,Account Name,Debit,Credit,Balance\n";
+    const rows = data.accounts.map((acc: any) =>
+      [acc.account_code, acc.account_name, acc.debit, acc.credit, acc.balance].join(",")
+    ).join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "trial_balance.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (!bookId) return <Typography color="error">Please select an accounting book.</Typography>;
   if (!data) return null;
 
   return (
@@ -23,7 +40,10 @@ export default function TrialBalancePage() {
         boxShadow: 3,
         overflowX: "auto"
       }}>
-        <Typography variant="h5" gutterBottom>Trial Balance</Typography>
+        <Typography variant="h5" gutterBottom>
+          Trial Balance
+          <ExportButton onExportCSV={exportCSV} disabled={!data} />
+        </Typography>
         <Box sx={{ width: "100%", overflowX: "auto" }}>
           <Table size="small">
             <TableHead>

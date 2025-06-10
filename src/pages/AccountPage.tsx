@@ -5,8 +5,9 @@ import {
   Paper, Typography, Table, TableHead, TableRow, TableCell, TableBody,
   Button, Snackbar, Alert, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Box,
 } from "@mui/material";
+import ExportButton from "../components/ExportButton";
 
-export default function AccountsPage() {
+export default function AccountPage({ bookId }: { bookId: number | null }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [snackbar, setSnackbar] = useState<{open: boolean, message: string, severity: "success"|"error"}>({open: false, message: "", severity: "success"});
   const [editing, setEditing] = useState<Account | null>(null);
@@ -15,8 +16,8 @@ export default function AccountsPage() {
   const [errorDialog, setErrorDialog] = useState<{open: boolean, message: string}>({open: false, message: ""});
 
   useEffect(() => {
-    apiFetch("/accounts").then(setAccounts);
-  }, []);
+    if (bookId) apiFetch(`/accounts?book_id=${bookId}`).then(setAccounts);
+  }, [bookId]);
 
   const deleteAccount = async (id: number) => {
     try {
@@ -64,7 +65,7 @@ export default function AccountsPage() {
     try {
       const newAcc = await apiFetch("/accounts", {
         method: "POST",
-        body: JSON.stringify(addForm),
+        body: JSON.stringify({ ...addForm, book_id: bookId }),
       });
       setAccounts([...accounts, { ...addForm, id: newAcc.id } as Account]);
       setAddForm({ name: "", type: "", code: "" });
@@ -73,6 +74,38 @@ export default function AccountsPage() {
       setErrorDialog({open: true, message: err?.error || "An unexpected error occurred."});
     }
   };
+
+  const exportCSV = () => {
+    if (!accounts.length) return;
+    const header = "Name,Type,Code,Category,Parent ID\n";
+    const rows = accounts.map(acc =>
+      [acc.name, acc.type, acc.code, acc.category || "", acc.parent_id || ""].join(",")
+    ).join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "chart_of_accounts.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = () => {
+    import("jspdf").then(jsPDF => {
+      const doc = new jsPDF.jsPDF();
+      doc.text("Chart of Accounts", 10, 10);
+      accounts.forEach((acc, i) => {
+        doc.text(
+          `${acc.name} | ${acc.type} | ${acc.code} | ${acc.category || ""} | ${acc.parent_id || ""}`,
+          10,
+          20 + i * 8
+        );
+      });
+      doc.save("chart_of_accounts.pdf");
+    });
+  };
+
+  if (!bookId) return <Typography color="error">Please select an accounting book.</Typography>;
 
   return (
     <Box sx={{ px: { xs: 0, sm: 2 }, py: { xs: 1, sm: 2 }, width: "100%" }}>
@@ -86,7 +119,10 @@ export default function AccountsPage() {
         boxShadow: 3,
         overflowX: "auto"
       }}>
-        <Typography variant="h5" gutterBottom>Chart of Accounts</Typography>
+        <Typography variant="h5" gutterBottom>
+          Chart of Accounts
+          <ExportButton onExportCSV={exportCSV} onExportPDF={exportPDF} disabled={!accounts.length} />
+        </Typography>
         {/* Add Account Form */}
         <Box
           sx={{
@@ -109,14 +145,21 @@ export default function AccountsPage() {
             fullWidth
           />
           <TextField
+            select
             label="Type"
             name="type"
             value={addForm.type || ""}
             onChange={handleAddChange}
             size="small"
             fullWidth
-            placeholder="Asset, Liability, Equity, Income, Expense"
-          />
+          >
+            <option value="">Select Type</option>
+            <option value="Asset">Asset</option>
+            <option value="Liability">Liability</option>
+            <option value="Equity">Equity</option>
+            <option value="Income">Income</option>
+            <option value="Expense">Expense</option>
+          </TextField>
           <TextField
             label="Code"
             name="code"
@@ -125,6 +168,28 @@ export default function AccountsPage() {
             size="small"
             fullWidth
           />
+          <TextField
+            label="Category"
+            name="category"
+            value={addForm.category || ""}
+            onChange={handleAddChange}
+            size="small"
+            fullWidth
+          />
+          <TextField
+            select
+            label="Parent Account"
+            name="parent_id"
+            value={addForm.parent_id || ""}
+            onChange={handleAddChange}
+            size="small"
+            fullWidth
+          >
+            <option value="">None</option>
+            {accounts.map(acc => (
+              <option key={acc.id} value={acc.id}>{acc.name}</option>
+            ))}
+          </TextField>
           <Button
             variant="contained"
             onClick={addAccount}
@@ -169,7 +234,22 @@ export default function AccountsPage() {
           <DialogTitle>Edit Account</DialogTitle>
           <DialogContent>
             <TextField label="Name" name="name" value={editForm.name || ""} onChange={handleEditChange} fullWidth margin="normal" />
-            <TextField label="Type" name="type" value={editForm.type || ""} onChange={handleEditChange} fullWidth margin="normal" />
+            <TextField
+              select
+              label="Type"
+              name="type"
+              value={editForm.type || ""}
+              onChange={handleEditChange}
+              fullWidth
+              margin="normal"
+            >
+              <option value="">Select Type</option>
+              <option value="Asset">Asset</option>
+              <option value="Liability">Liability</option>
+              <option value="Equity">Equity</option>
+              <option value="Income">Income</option>
+              <option value="Expense">Expense</option>
+            </TextField>
             <TextField label="Code" name="code" value={editForm.code || ""} onChange={handleEditChange} fullWidth margin="normal" />
           </DialogContent>
           <DialogActions>

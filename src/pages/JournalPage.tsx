@@ -5,8 +5,9 @@ import {
   Paper, Typography, Box, Table, TableHead, TableRow, TableCell, TableBody,
   Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton
 } from "@mui/material";
+import ExportButton from "../components/ExportButton";
 
-export default function JournalPage() {
+export default function JournalPage({ bookId }: { bookId: number | null }) {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [snackbar, setSnackbar] = useState<{open: boolean, message: string, severity: "success"|"error"}>({open: false, message: "", severity: "success"});
@@ -14,15 +15,18 @@ export default function JournalPage() {
   const [editForm, setEditForm] = useState<Partial<JournalEntry>>({});
   const [editLines, setEditLines] = useState<JournalLine[]>([]);
   const [errorDialog, setErrorDialog] = useState<{open: boolean, message: string}>({open: false, message: ""});
+  const [attachment, setAttachment] = useState<File | null>(null);
 
   // --- Add Entry State ---
   const [addForm, setAddForm] = useState<{date: string, description: string}>({date: "", description: ""});
   const [addLines, setAddLines] = useState<JournalLine[]>([]);
 
   useEffect(() => {
-    apiFetch("/journal").then(setEntries);
-    apiFetch("/accounts").then(setAccounts);
-  }, []);
+    if (bookId) {
+      apiFetch(`/journal?book_id=${bookId}`).then(setEntries);
+      apiFetch(`/accounts?book_id=${bookId}`).then(setAccounts);
+    }
+  }, [bookId]);
 
   // --- Add Entry Logic ---
   const handleAddChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,52 +51,37 @@ export default function JournalPage() {
     try {
       await apiFetch("/journal", {
         method: "POST",
-        body: JSON.stringify({ ...addForm, lines: addLines }),
+        body: JSON.stringify({ ...addForm, lines: addLines, book_id: bookId }),
       });
       setSnackbar({open: true, message: "Journal entry added!", severity: "success"});
       setAddForm({date: "", description: ""});
       setAddLines([]);
-      setEntries(await apiFetch("/journal"));
+      setEntries(await apiFetch(`/journal?book_id=${bookId}`));
     } catch (err: any) {
       setErrorDialog({open: true, message: err?.error || "Failed to add journal entry"});
     }
   };
 
-  // --- Edit Entry Logic (unchanged) ---
-  const deleteEntry = async (id: number) => {
-    try {
-      await apiFetch(`/journal/${id}`, { method: "DELETE" });
-      setEntries(entries.filter(e => e.id !== id));
-      setSnackbar({open: true, message: "Journal entry deleted!", severity: "success"});
-    } catch (err: any) {
-      setErrorDialog({open: true, message: err?.error || "An unexpected error occurred."});
-    }
-  };
-
+  // --- Edit Entry Logic ---
   const startEdit = (entry: JournalEntry) => {
     setEditing(entry);
     setEditForm({ date: entry.date, description: entry.description });
     setEditLines(entry.lines.map(l => ({ ...l })));
   };
-
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditForm({...editForm, [e.target.name]: e.target.value});
   };
-
   const handleLineChange = (idx: number, field: keyof JournalLine, value: any) => {
     setEditLines(lines =>
       lines.map((l, i) => i === idx ? { ...l, [field]: field === "account_id" ? Number(value) : value } : l)
     );
   };
-
   const addLine = () => {
     setEditLines([...editLines, { account_id: accounts[0]?.id || 0, debit: 0, credit: 0 }]);
   };
-
   const removeLine = (idx: number) => {
     setEditLines(editLines.filter((_, i) => i !== idx));
   };
-
   const saveEdit = async () => {
     if (!editing) return;
     try {
@@ -101,18 +90,109 @@ export default function JournalPage() {
         body: JSON.stringify({ ...editForm, lines: editLines }),
       });
       // Refresh entries
-      const updated = await apiFetch("/journal");
+      const updated = await apiFetch(`/journal?book_id=${bookId}`);
       setEntries(updated);
       setSnackbar({open: true, message: "Journal entry updated!", severity: "success"});
       setEditing(null);
     } catch (err: any) {
-      setErrorDialog({open: true, message: err?.error || "An unexpected error occurred."});
+      setErrorDialog({open: true, message: err?.error || "Failed to update entry"});
     }
   };
 
+  const deleteEntry = async (id: number) => {
+    try {
+      await apiFetch(`/journal/${id}`, { method: "DELETE" });
+      setEntries(entries.filter(e => e.id !== id));
+      setSnackbar({open: true, message: "Entry deleted!", severity: "success"});
+    } catch (err: any) {
+      setErrorDialog({open: true, message: err?.error || "Failed to delete entry"});
+    }
+  };
+
+  // --- Approval Logic (unchanged) ---
+  const submitEntry = async (id: number) => {
+    try {
+      await apiFetch(`/journal/submit/${id}`, { method: "POST" });
+      setEntries(entries.map(e => e.id === id ? { ...e, status: "submitted" } : e));
+      setSnackbar({open: true, message: "Entry submitted!", severity: "success"});
+    } catch (err: any) {
+      setErrorDialog({open: true, message: err?.error || "Failed to submit entry"});
+    }
+  };
+  const approveEntry = async (id: number) => {
+    try {
+      await apiFetch(`/journal/approve/${id}`, { method: "POST" });
+      setEntries(entries.map(e => e.id === id ? { ...e, status: "approved" } : e));
+      setSnackbar({open: true, message: "Entry approved!", severity: "success"});
+    } catch (err: any) {
+      setErrorDialog({open: true, message: err?.error || "Failed to approve entry"});
+    }
+  };
+  const rejectEntry = async (id: number) => {
+    try {
+      await apiFetch(`/journal/reject/${id}`, { method: "POST" });
+      setEntries(entries.map(e => e.id === id ? { ...e, status: "rejected" } : e));
+      setSnackbar({open: true, message: "Entry rejected!", severity: "success"});
+    } catch (err: any) {
+      setErrorDialog({open: true, message: err?.error || "Failed to reject entry"});
+    }
+  };
+
+  // --- Export ---
+  const exportCSV = () => {
+    if (!entries.length) return;
+    const header = "Date,Description,Account,Debit,Credit,Status\n";
+    const rows = entries.flatMap(entry =>
+      entry.lines.map(line =>
+        [
+          entry.date,
+          entry.description,
+          accounts.find(a => a.id === line.account_id)?.name || line.account_id,
+          line.debit,
+          line.credit,
+          entry.status || ""
+        ].join(",")
+      )
+    ).join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "journal.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = () => {
+    import("jspdf").then(jsPDF => {
+      const doc = new jsPDF.jsPDF();
+      doc.text("Journal Entries", 10, 10);
+      let y = 20;
+      entries.forEach(entry => {
+        doc.text(`${entry.date} | ${entry.description} | ${entry.status || ""}`, 10, y);
+        y += 8;
+        entry.lines.forEach(line => {
+          doc.text(
+            `  ${accounts.find(a => a.id === line.account_id)?.name || line.account_id} | Debit: ${line.debit} | Credit: ${line.credit}`,
+            10,
+            y
+          );
+          y += 8;
+        });
+        y += 4;
+      });
+      doc.save("journal.pdf");
+    });
+  };
+
+  if (!bookId) return <Typography color="error">Please select an accounting book.</Typography>;
+
   return (
     <Paper sx={{ p: 4, mt: 4 }}>
-      <Typography variant="h5" gutterBottom>Journal Entries</Typography>
+      <Typography variant="h5" gutterBottom>
+        Journal
+        <ExportButton onExportCSV={exportCSV} onExportPDF={exportPDF} disabled={!entries.length} />
+      </Typography>
       {/* --- Add Entry Form (unchanged) --- */}
       <Box sx={{ mb: 3, p: 2, border: "1px solid #eee", borderRadius: 2 }}>
         <Typography variant="h6">Add Journal Entry</Typography>
@@ -173,6 +253,8 @@ export default function JournalPage() {
                 <TableCell>Account Name</TableCell>
                 <TableCell align="right">Debit</TableCell>
                 <TableCell align="right">Credit</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -184,6 +266,12 @@ export default function JournalPage() {
                     <TableCell>{acc?.name || l.account_id}</TableCell>
                     <TableCell align="right">{l.debit ? l.debit.toFixed(2) : ""}</TableCell>
                     <TableCell align="right">{l.credit ? l.credit.toFixed(2) : ""}</TableCell>
+                    <TableCell>{entry.status}</TableCell>
+                    <TableCell>
+                      <Button onClick={() => submitEntry(entry.id)}>Submit</Button>
+                      <Button onClick={() => approveEntry(entry.id)}>Approve</Button>
+                      <Button onClick={() => rejectEntry(entry.id)}>Reject</Button>
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -238,12 +326,43 @@ export default function JournalPage() {
             </Box>
           ))}
           <Button onClick={addLine} sx={{ mt: 1 }}>Add Line</Button>
+          {/* --- File Attachment Section --- */}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle1">Attachment</Typography>
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={e => setAttachment(e.target.files?.[0] || null)}
+            />
+            <Button
+              onClick={async () => {
+                if (attachment && editing) {
+                  const formData = new FormData();
+                  formData.append("file", attachment);
+                  await fetch(`${import.meta.env.VITE_API_URL}/journal/upload/${editing.id}`, {
+                    method: "POST",
+                    body: formData,
+                    credentials: "include",
+                  });
+                  setSnackbar({open: true, message: "Attachment uploaded!", severity: "success"});
+                }
+              }}
+              variant="contained"
+              size="small"
+              sx={{ mt: 1 }}
+            >
+              Upload Attachment
+            </Button>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditing(null)}>Cancel</Button>
           <Button onClick={saveEdit} variant="contained">Save</Button>
         </DialogActions>
       </Dialog>
+      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({...snackbar, open: false})}>
+        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
+      </Snackbar>
       <Dialog open={errorDialog.open} onClose={() => setErrorDialog({open: false, message: ""})}>
         <DialogTitle>Error</DialogTitle>
         <DialogContent>
@@ -253,9 +372,6 @@ export default function JournalPage() {
           <Button onClick={() => setErrorDialog({open: false, message: ""})}>Close</Button>
         </DialogActions>
       </Dialog>
-      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({...snackbar, open: false})}>
-        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
-      </Snackbar>
     </Paper>
   );
 }

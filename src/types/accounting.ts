@@ -3,6 +3,8 @@ export interface Account {
   name: string;
   type: string;
   code: string;
+  category?: string;
+  parent_id?: number;
 }
 
 export interface JournalLine {
@@ -17,4 +19,6 @@ export interface JournalEntry {
   date: string;
   description: string;
   lines: JournalLine[];
+  status?: string;
+  attachment?: string;
 }

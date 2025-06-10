@@ -1,14 +1,66 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api";
 import { Paper, Typography, Table, TableHead, TableRow, TableCell, TableBody, Box } from "@mui/material";
+import ExportButton from "../components/ExportButton";
 
-export default function BalanceSheetPage() {
+export default function BalanceSheetPage({ bookId }: { bookId: number | null }) {
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    apiFetch("/journal/balance-sheet").then(setData);
-  }, []);
+    if (bookId) apiFetch(`/journal/balance-sheet?book_id=${bookId}`).then(setData);
+  }, [bookId]);
 
+  const exportCSV = () => {
+    if (!data) return;
+    let rows = "Section,Account Code,Account Name,Balance\n";
+    data.assets.forEach((acc: any) => {
+      rows += `Asset,${acc.account_code},${acc.account_name},${acc.balance}\n`;
+    });
+    data.liabilities.forEach((acc: any) => {
+      rows += `Liability,${acc.account_code},${acc.account_name},${acc.balance}\n`;
+    });
+    data.equity.forEach((acc: any) => {
+      rows += `Equity,${acc.account_code},${acc.account_name},${acc.balance}\n`;
+    });
+    const blob = new Blob([rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "balance_sheet.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = () => {
+    import("jspdf").then(jsPDF => {
+      const doc = new jsPDF.jsPDF();
+      doc.text("Balance Sheet", 10, 10);
+      let y = 20;
+      doc.text("Assets", 10, y);
+      y += 8;
+      data.assets.forEach((acc: any) => {
+        doc.text(`${acc.account_code} | ${acc.account_name} | ${acc.balance}`, 10, y);
+        y += 8;
+      });
+      y += 4;
+      doc.text("Liabilities", 10, y);
+      y += 8;
+      data.liabilities.forEach((acc: any) => {
+        doc.text(`${acc.account_code} | ${acc.account_name} | ${acc.balance}`, 10, y);
+        y += 8;
+      });
+      y += 4;
+      doc.text("Equity", 10, y);
+      y += 8;
+      data.equity.forEach((acc: any) => {
+        doc.text(`${acc.account_code} | ${acc.account_name} | ${acc.balance}`, 10, y);
+        y += 8;
+      });
+      doc.save("balance_sheet.pdf");
+    });
+  };
+
+  if (!bookId) return <Typography color="error">Please select an accounting book.</Typography>;
   if (!data) return null;
 
   return (
@@ -23,7 +75,10 @@ export default function BalanceSheetPage() {
         boxShadow: 3,
         overflowX: "auto"
       }}>
-        <Typography variant="h5" gutterBottom>Balance Sheet</Typography>
+        <Typography variant="h5" gutterBottom>
+          Balance Sheet
+          <ExportButton onExportCSV={exportCSV} onExportPDF={exportPDF} disabled={!data} />
+        </Typography>
         <Box sx={{
           display: "flex",
           flexDirection: { xs: "column", md: "row" },
