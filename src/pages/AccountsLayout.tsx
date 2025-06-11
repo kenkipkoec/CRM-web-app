@@ -20,6 +20,9 @@ import {
   DialogActions,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import MenuIcon from "@mui/icons-material/Menu";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api";
 import AccountPage from "./AccountPage";
@@ -28,6 +31,7 @@ import TrialBalancePage from "./TrialBalancePage";
 import IncomeStatementPage from "./IncomeStatementPage";
 import BalanceSheetPage from "./BalanceSheetPage";
 import LedgerPage from "./LedgerPage";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 const navItems = [
   { label: "Chart of Accounts", path: "chart" },
@@ -42,6 +46,7 @@ export default function AccountsLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [books, setBooks] = useState<{ id: number; name: string }[]>([]);
   const [selectedBook, setSelectedBook] = useState<number | null>(null);
   const [bookDialog, setBookDialog] = useState(false);
@@ -55,6 +60,9 @@ export default function AccountsLayout() {
     book: null,
   });
   const [newName, setNewName] = useState("");
+
+  // Drawer open state for mobile
+  const [drawerOpen, setDrawerOpen] = useState(true); // default open on desktop
 
   useEffect(() => {
     apiFetch("/books").then(setBooks);
@@ -82,12 +90,16 @@ export default function AccountsLayout() {
             : "linear-gradient(135deg, #181c24 60%, #22334d 100%)",
       }}
     >
+      {/* Drawer */}
       <Drawer
-        variant="permanent"
+        variant={isMobile ? "temporary" : "persistent"}
         anchor="left"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
         sx={{
           width: 260,
           flexShrink: 0,
+          display: drawerOpen ? "block" : "none",
           [`& .MuiDrawer-paper`]: {
             width: 260,
             boxSizing: "border-box",
@@ -101,11 +113,10 @@ export default function AccountsLayout() {
               theme.palette.mode === "light"
                 ? "0 8px 32px 0 rgba(31, 38, 135, 0.12)"
                 : "0 8px 32px 0 rgba(0,0,0,0.45)",
-            borderRadius: "0 24px 24px 0",
+            borderRadius: isMobile ? 0 : "0 24px 24px 0",
             p: 0,
           },
         }}
-        open
       >
         <Box sx={{ display: "flex", alignItems: "center", p: 2, pb: 1 }}>
           <IconButton
@@ -114,8 +125,7 @@ export default function AccountsLayout() {
             size="large"
             sx={{
               color: theme.palette.primary.main,
-              background:
-                theme.palette.mode === "light" ? "#e3f0ff" : "#23283a",
+              background: theme.palette.mode === "light" ? "#e3f0ff" : "#23283a",
               mr: 1,
               "&:hover": {
                 background: theme.palette.action.hover,
@@ -130,10 +140,30 @@ export default function AccountsLayout() {
               fontWeight: 700,
               color: theme.palette.text.primary,
               letterSpacing: 1,
+              fontSize: { xs: "1rem", sm: "1.2rem" },
+              flex: 1,
             }}
           >
             Back to Main
           </Typography>
+          {/* Drawer Hide button (desktop only) */}
+          {!isMobile && (
+            <IconButton
+              onClick={() => setDrawerOpen(false)}
+              aria-label="Hide layout"
+              size="large"
+              sx={{
+                ml: 1,
+                color: theme.palette.primary.main,
+                background: theme.palette.mode === "light" ? "#e3f0ff" : "#23283a",
+                "&:hover": {
+                  background: theme.palette.action.hover,
+                },
+              }}
+            >
+              <ChevronLeftIcon />
+            </IconButton>
+          )}
         </Box>
         <Divider sx={{ mb: 1 }} />
         <Box sx={{ p: 2 }}>
@@ -215,6 +245,29 @@ export default function AccountsLayout() {
           })}
         </List>
       </Drawer>
+      {/* Show Drawer button (desktop only, when hidden) */}
+      {!isMobile && !drawerOpen && (
+        <IconButton
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Show layout"
+          size="large"
+          sx={{
+            position: "fixed",
+            top: 16,
+            left: 16,
+            zIndex: 1301,
+            color: theme.palette.primary.main,
+            background: theme.palette.mode === "light" ? "#e3f0ff" : "#23283a",
+            boxShadow: 2,
+            "&:hover": {
+              background: theme.palette.action.hover,
+            },
+          }}
+        >
+          <ChevronRightIcon />
+        </IconButton>
+      )}
+      {/* Main Content */}
       <Box
         sx={{
           flex: 1,
@@ -225,6 +278,22 @@ export default function AccountsLayout() {
           transition: "background 0.3s",
         }}
       >
+        {/* Add a menu button for mobile to open drawer */}
+        {isMobile && (
+          <IconButton
+            onClick={() => setDrawerOpen(true)}
+            sx={{
+              position: "fixed",
+              top: 16,
+              left: 16,
+              zIndex: 1301,
+              background: theme.palette.background.paper,
+              boxShadow: 2,
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
         <Routes>
           <Route path="chart" element={<AccountPage bookId={selectedBook} />} />
           <Route path="journal" element={<JournalPage bookId={selectedBook} />} />
@@ -234,103 +303,103 @@ export default function AccountsLayout() {
           <Route path="balance-sheet" element={<BalanceSheetPage bookId={selectedBook} />} />
           <Route path="*" element={<AccountPage bookId={selectedBook} />} />
         </Routes>
-      </Box>
-      <Dialog open={bookDialog} onClose={() => setBookDialog(false)}>
-        <DialogTitle>New Accounting Book</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Book Name"
-            value={newBookName}
-            onChange={(e) => setNewBookName(e.target.value)}
-            fullWidth
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBookDialog(false)}>Cancel</Button>
-          <Button
-            onClick={async () => {
-              const book = await apiFetch("/books", {
-                method: "POST",
-                body: JSON.stringify({ name: newBookName }),
-              });
-              setBooks([...books, book]);
-              setSelectedBook(book.id);
-              setBookDialog(false);
-              setNewBookName("");
-            }}
-            variant="contained"
-            disabled={!newBookName.trim()}
-          >
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog
-        open={renameDialog.open}
-        onClose={() => setRenameDialog({ open: false, book: null })}
-      >
-        <DialogTitle>Rename Book</DialogTitle>
-        <DialogContent>
-          <TextField
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            fullWidth
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={async () => {
-              await apiFetch(
-                `/books/${renameDialog.book.id}`,
-                {
-                  method: "PUT",
-                  body: JSON.stringify({ name: newName }),
-                }
-              );
-              setBooks(
-                books.map((b) =>
-                  b.id === renameDialog.book.id
-                    ? { ...b, name: newName }
-                    : b
-                )
-              );
-              setRenameDialog({ open: false, book: null });
-            }}
-            variant="contained"
-            disabled={!newName.trim()}
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog
-        open={deleteDialog.open}
-        onClose={() => setDeleteDialog({ open: false, book: null })}
-      >
-        <DialogTitle>Delete Book</DialogTitle>
-        <DialogContent>
-          Are you sure? This cannot be undone.
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={async () => {
-              try {
+        <Dialog open={bookDialog} onClose={() => setBookDialog(false)}>
+          <DialogTitle>New Accounting Book</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Book Name"
+              value={newBookName}
+              onChange={(e) => setNewBookName(e.target.value)}
+              fullWidth
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setBookDialog(false)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                const book = await apiFetch("/books", {
+                  method: "POST",
+                  body: JSON.stringify({ name: newBookName }),
+                });
+                setBooks([...books, book]);
+                setSelectedBook(book.id);
+                setBookDialog(false);
+                setNewBookName("");
+              }}
+              variant="contained"
+              disabled={!newBookName.trim()}
+            >
+              Create
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          open={renameDialog.open}
+          onClose={() => setRenameDialog({ open: false, book: null })}
+        >
+          <DialogTitle>Rename Book</DialogTitle>
+          <DialogContent>
+            <TextField
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              fullWidth
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={async () => {
                 await apiFetch(
-                  `/books/${deleteDialog.book.id}`,
-                  { method: "DELETE" }
+                  `/books/${renameDialog.book.id}`,
+                  {
+                    method: "PUT",
+                    body: JSON.stringify({ name: newName }),
+                  }
                 );
-                setBooks(books.filter((b) => b.id !== deleteDialog.book.id));
-                setDeleteDialog({ open: false, book: null });
-              } catch (err) {
-                // Handle error (e.g., book not empty)
-              }
-            }}
-            color="error"
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+                setBooks(
+                  books.map((b) =>
+                    b.id === renameDialog.book.id
+                      ? { ...b, name: newName }
+                      : b
+                  )
+                );
+                setRenameDialog({ open: false, book: null });
+              }}
+              variant="contained"
+              disabled={!newName.trim()}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          open={deleteDialog.open}
+          onClose={() => setDeleteDialog({ open: false, book: null })}
+        >
+          <DialogTitle>Delete Book</DialogTitle>
+          <DialogContent>
+            Are you sure? This cannot be undone.
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={async () => {
+                try {
+                  await apiFetch(
+                    `/books/${deleteDialog.book.id}`,
+                    { method: "DELETE" }
+                  );
+                  setBooks(books.filter((b) => b.id !== deleteDialog.book.id));
+                  setDeleteDialog({ open: false, book: null });
+                } catch (err) {
+                  // Handle error (e.g., book not empty)
+                }
+              }}
+              color="error"
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
     </Box>
   );
 }

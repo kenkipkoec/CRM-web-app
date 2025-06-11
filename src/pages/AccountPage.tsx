@@ -152,6 +152,7 @@ export default function AccountPage({ bookId }: { bookId: number | null }) {
             onChange={handleAddChange}
             size="small"
             fullWidth
+            SelectProps={{ native: true }} // <-- Add this line
           >
             <option value="">Select Type</option>
             <option value="Asset">Asset</option>
