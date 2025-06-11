@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "https://crm-backend2-npjm.onrender.com/api";
 
 export async function apiFetch(
   path: string,
@@ -37,5 +37,5 @@ export async function apiFetch(
     } catch {}
     throw new Error(msg || "API error");
   }
-  return res.status === 204 ? null : res.json();
+  return res.status === 204 ? null : await res.json();
 }
